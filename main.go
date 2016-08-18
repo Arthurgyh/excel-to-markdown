@@ -35,6 +35,7 @@ func readWriteSheet(inputFilePath, outputDirPath string) error {
 			if rowIdx == 0 {
 				// #見出し
 				f.WriteString("# ")
+				f.WriteString("\n")
 			}
 
 			text := ""
@@ -46,6 +47,7 @@ func readWriteSheet(inputFilePath, outputDirPath string) error {
 				hyou = false
 				f.WriteString("\n")
 				f.WriteString("## ")
+				f.WriteString("\n")
 				continue
 			}
 
