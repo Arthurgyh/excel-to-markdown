@@ -17,16 +17,22 @@ func readWriteSheet(inputFilePath, outputDirPath string) error {
 	if err != nil {
 		return err
 	}
-
+	
+	writeFilePath := strings.Join([]string{strings.TrimSuffix(inputFilePath, ".xlsx")}, "/") + ".md"
+	if outputDirPath != "" {
+		writeFilePath = strings.Join([]string{outputDirPath,strings.TrimSuffix(inputFilePath, ".xlsx")}, "/") + ".md"
+	} 
+	
+	f, err := os.Create(writeFilePath)
+		if err != nil {
+			log.Fatal(err)
+	}
+	
 	for _, sheet := range xlFile.Sheets {
 		// sheet単位でfile生成
 		fmt.Printf("Start %s ...\n", sheet.Name)
 
-		writeFilePath := strings.Join([]string{outputDirPath, sheet.Name}, "/") + ".md"
-		f, err := os.Create(writeFilePath)
-		if err != nil {
-			log.Fatal(err)
-		}
+		
 
 		hyou := false
 		// rowはまとめて1行にする
@@ -35,6 +41,7 @@ func readWriteSheet(inputFilePath, outputDirPath string) error {
 			if rowIdx == 0 {
 				// #見出し
 				f.WriteString("# ")
+				f.WriteString(sheet.Name)
 				f.WriteString("\n")
 			}
 
@@ -83,9 +90,10 @@ func readWriteSheet(inputFilePath, outputDirPath string) error {
 			f.WriteString("\n")
 		}
 		fmt.Printf("End %s => %s\n", sheet.Name, writeFilePath)
-		f.Close()
+		
 	}
-
+	f.Close()
+	
 	return nil
 }
 
@@ -116,42 +124,73 @@ func doMain(c *cli.Context) error {
 	inputDirPath := c.String("input-dir")
 	outputDirPath := c.String("output-dir")
 
-	if inputDirPath == "" || outputDirPath == "" {
+	//if inputDirPath == "" || outputDirPath == "" {
+	//	cli.ShowAppHelp(c)
+	//	return nil
+	//}
+	
+	if inputDirPath == ""  {
 		cli.ShowAppHelp(c)
 		return nil
 	}
-
-	d, err := ioutil.ReadDir(inputDirPath)
-	if err != nil {
-		return err
-	}
-
+	
 	var wg sync.WaitGroup
-	for _, file := range d {
-		if file.IsDir() {
-			continue
-		}
-		inputFilePath := strings.Join([]string{inputDirPath, file.Name()}, "/")
+	
+	//inputDirPath - делаем что передаём файл
+	inputFilePath := strings.Join([]string{inputDirPath}, "/")
 		if !strings.HasSuffix(inputFilePath, ".xlsx") {
 			fmt.Println("error don't xlsx file.")
-			continue
+			return nil
 		}
-
-		outputDirPath := strings.Join([]string{outputDirPath, file.Name()}, "/")
-		outputDirPath = strings.TrimSuffix(outputDirPath, ".xlsx")
+	
+	if outputDirPath != "" {
 		if _, err := ioutil.ReadDir(outputDirPath); err != nil {
 			err := os.Mkdir(outputDirPath, 0755)
 			if err != nil {
 				return err
 			}
-		}
-
-		wg.Add(1)
+		}			
+	}		
+		
+	wg.Add(1)
 		go func(inputFilePath string) {
 			readWriteSheet(inputFilePath, outputDirPath)
 			wg.Done()
-		}(inputFilePath)
-	}
+		}(inputFilePath)	
+
+	//d, err := ioutil.ReadDir(inputDirPath)
+	//if err != nil {
+	//	return err
+	//}
+
+	
+	
+	//for _, file := range d {
+	//	if file.IsDir() {
+	//		continue
+	//	}
+	//	inputFilePath := strings.Join([]string{inputDirPath, file.Name()}, "/")
+	//	if !strings.HasSuffix(inputFilePath, ".xlsx") {
+	//		fmt.Println("error don't xlsx file.")
+	//		continue
+	//	}
+
+	//	outputDirPath := strings.Join([]string{outputDirPath, file.Name()}, "/")
+	//	outputDirPath = strings.TrimSuffix(outputDirPath, ".xlsx")
+	//	if _, err := ioutil.ReadDir(outputDirPath); err != nil {
+	//		err := os.Mkdir(outputDirPath, 0755)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+    // 
+	//	wg.Add(1)
+	//	go func(inputFilePath string) {
+	//		readWriteSheet(inputFilePath, outputDirPath)
+	//		wg.Done()
+	//	}(inputFilePath)
+	//}
+	
 	wg.Wait()
 
 	return nil
